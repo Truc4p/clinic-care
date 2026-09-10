@@ -2,11 +2,118 @@
 
 Minimal, secure web app for clinic consultation notes with ICD-10 diagnosis codes.
 
+Doctors can search ICD-10 codes, record consultation notes with selected diagnoses, list past notes, and search by patient or diagnosis.
+
 ## Stack
 
-- **Backend:** FastAPI + SQLite + SQLAlchemy + JWT
-- **Frontend:** Nuxt 3
+| Layer | Technology |
+|-------|------------|
+| Backend | FastAPI, SQLAlchemy, SQLite, Pydantic, JWT |
+| Frontend | Nuxt 3 (Vue 3) |
+| Data | ~100 ICD-10-CM codes seeded from categories on [icd10data.com](https://www.icd10data.com/ICD10CM/Codes) |
 
-## Status
+## Project structure
 
-Project scaffold in progress. See setup instructions once development completes.
+```
+ClinicCare/
+├── backend/
+│   ├── app/                 # FastAPI application
+│   ├── sql/seed_icd10.sql   # 100 ICD-10 diagnosis inserts
+│   └── requirements.txt
+├── frontend/                # Nuxt 3 app
+└── README.md
+```
+
+## Setup and run
+
+### Backend
+
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+API docs: http://127.0.0.1:8000/docs
+
+On startup the app creates SQLite tables (`cliniccare.db`), loads ICD-10 codes if empty, and seeds a demo doctor.
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+App: http://localhost:3000
+
+Optional API base override:
+
+```bash
+NUXT_PUBLIC_API_BASE=http://127.0.0.1:8000 npm run dev
+```
+
+## Demo login
+
+| Field | Value |
+|-------|-------|
+| Email | `doctor@clinic.care` |
+| Password | `password123` |
+
+## API summary
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/auth/login` | No | JSON `{ "email", "password" }` → JWT |
+| `GET` | `/diagnosis?search=<term>` | No | Search local ICD-10 table |
+| `POST` | `/consultation` | Bearer JWT | Create note with diagnosis codes |
+| `GET` | `/consultation` | Bearer JWT | List notes; optional `patient`, `diagnosis` filters |
+| `GET` | `/health` | No | Health check |
+
+### Example requests
+
+```bash
+# Login
+TOKEN=$(curl -s -X POST http://127.0.0.1:8000/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"doctor@clinic.care","password":"password123"}' \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+
+# Search diagnoses
+curl "http://127.0.0.1:8000/diagnosis?search=diabetes"
+
+# Create consultation
+curl -X POST http://127.0.0.1:8000/consultation \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"patient_name":"Jane Doe","notes":"Follow-up","diagnosis_codes":["E11.9"]}'
+
+# List / filter
+curl "http://127.0.0.1:8000/consultation?patient=Jane" \
+  -H "Authorization: Bearer $TOKEN"
+curl "http://127.0.0.1:8000/consultation?diagnosis=E11.9" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+## Frontend pages
+
+| Route | Purpose |
+|-------|---------|
+| `/login` | Doctor JWT login |
+| `/consultations` | Table of past consultations |
+| `/consultations/new` | New consultation form with ICD typeahead |
+| `/search` | Search notes by patient or diagnosis |
+
+## Features
+
+- Pydantic validation on request bodies
+- HTTP error responses for unknown diagnosis codes, auth failures, and bad input
+- JWT-protected consultation create/list
+- CORS enabled for local Nuxt (`localhost:3000`)
+
+## License
+
+Educational / assignment use.
