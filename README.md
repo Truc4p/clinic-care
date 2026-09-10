@@ -33,12 +33,26 @@ cd backend
 python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+# set required env vars (example)
+export SECRET_KEY='replace-me-with-random-secret'
+export DATABASE_URL='sqlite:///./cliniccare.db'
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 API docs: http://127.0.0.1:8000/docs
 
 On startup the app creates SQLite tables (`cliniccare.db`), loads ICD-10 codes if empty, and seeds a demo doctor.
+
+### Environment variables
+
+- `SECRET_KEY` — JWT secret (set to a strong random value in production)
+- `DATABASE_URL` — SQLAlchemy URL (default `sqlite:///./cliniccare.db` if unset)
+
+To run the local smoke test (backend must be running):
+
+```bash
+python3 tests/smoke_test.py
+```
 
 ### Frontend
 
@@ -72,6 +86,7 @@ NUXT_PUBLIC_API_BASE=http://127.0.0.1:8000 npm run dev
 | `POST` | `/consultation` | Bearer JWT | Create note with diagnosis codes |
 | `GET` | `/consultation` | Bearer JWT | List notes; optional `patient`, `diagnosis` filters |
 | `GET` | `/health` | No | Health check |
+| `GET` | `/auth/me` | Bearer JWT | Return current authenticated doctor profile |
 
 ### Example requests
 
@@ -96,6 +111,9 @@ curl "http://127.0.0.1:8000/consultation?patient=Jane" \
   -H "Authorization: Bearer $TOKEN"
 curl "http://127.0.0.1:8000/consultation?diagnosis=E11.9" \
   -H "Authorization: Bearer $TOKEN"
+
+# Get current doctor
+curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8000/auth/me
 ```
 
 ## Frontend pages
