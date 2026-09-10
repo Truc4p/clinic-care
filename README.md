@@ -15,6 +15,18 @@ Doctors can search ICD-10 codes, record consultation notes with selected diagnos
 ## Project structure
 
 ```
+```
+
+### Run with Docker
+
+Build and run backend + frontend with Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+The backend will be available at `http://localhost:8000` and the frontend at `http://localhost:3000`.
+
 ClinicCare/
 ├── backend/
 │   ├── app/                 # FastAPI application
