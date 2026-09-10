@@ -3,8 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .database import Base, SessionLocal, engine
 from . import models  # noqa: F401 — register models with metadata
-from .routers import consultation, diagnosis
-from .seed import seed_diagnoses
+from .routers import auth, consultation, diagnosis
+from .seed import seed_demo_doctor, seed_diagnoses
 
 app = FastAPI(title="ClinicCare Mini EMR", version="0.1.0")
 
@@ -16,6 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
 app.include_router(diagnosis.router)
 app.include_router(consultation.router)
 
@@ -26,6 +27,7 @@ def on_startup():
     db = SessionLocal()
     try:
         seed_diagnoses(db)
+        seed_demo_doctor(db)
     finally:
         db.close()
 

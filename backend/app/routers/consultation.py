@@ -1,21 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 
+from ..auth import get_current_doctor
 from ..database import get_db
 from ..models import Consultation, Diagnosis, Doctor
 from ..schemas import ConsultationCreate, ConsultationOut
 
 router = APIRouter(tags=["consultation"])
-
-
-def _require_doctor(db: Session) -> Doctor:
-    doctor = db.query(Doctor).first()
-    if doctor is None:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="No doctor account configured. Please set up authentication first.",
-        )
-    return doctor
 
 
 @router.post(
@@ -26,6 +17,7 @@ def _require_doctor(db: Session) -> Doctor:
 def create_consultation(
     payload: ConsultationCreate,
     db: Session = Depends(get_db),
+    doctor: Doctor = Depends(get_current_doctor),
 ):
     codes = [c.strip() for c in payload.diagnosis_codes if c and c.strip()]
     if not codes:
@@ -34,7 +26,6 @@ def create_consultation(
             detail="At least one diagnosis code is required.",
         )
 
-    # Deduplicate while preserving order
     unique_codes = list(dict.fromkeys(codes))
     diagnoses = db.query(Diagnosis).filter(Diagnosis.code.in_(unique_codes)).all()
     found_codes = {d.code for d in diagnoses}
@@ -45,7 +36,6 @@ def create_consultation(
             detail=f"Unknown diagnosis code(s): {', '.join(missing)}",
         )
 
-    doctor = _require_doctor(db)
     consultation = Consultation(
         patient_name=payload.patient_name.strip(),
         notes=payload.notes.strip(),
@@ -70,6 +60,7 @@ def list_consultations(
         default=None, description="Filter by diagnosis code or description"
     ),
     db: Session = Depends(get_db),
+    _: Doctor = Depends(get_current_doctor),
 ):
     query = db.query(Consultation).options(
         joinedload(Consultation.doctor),
