@@ -57,8 +57,17 @@ On startup the app creates SQLite tables (`cliniccare.db`), loads ICD-10 codes i
 
 ### Environment variables
 
-- `SECRET_KEY` — JWT secret (set to a strong random value in production)
-- `DATABASE_URL` — SQLAlchemy URL (default `sqlite:///./cliniccare.db` if unset)
+- `CLINICCARE_SECRET_KEY` — JWT secret (set to a strong random value in production)
+- `DATABASE_URL` — SQLAlchemy database URL (defaults to local SQLite if unset)
+- `CLINICCARE_FRONTEND_URL` — deployed frontend origin, for example `https://cliniccare.vercel.app`
+
+For production, configure these variables on the backend host. A PostgreSQL URL
+should use the `postgresql+psycopg://` scheme. See `backend/.env.example` for
+the expected format. Configure the frontend separately in Vercel with:
+
+```bash
+NUXT_PUBLIC_API_BASE=https://your-backend-domain.com
+```
 
 To run the local smoke test (backend must be running):
 
