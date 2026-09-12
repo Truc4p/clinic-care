@@ -10,10 +10,17 @@ from .seed import seed_demo_doctor, seed_diagnoses
 
 app = FastAPI(title="ClinicCare Mini EMR", version="0.1.0")
 
-frontend_url = os.getenv("CLINICCARE_FRONTEND_URL")
-allowed_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
-if frontend_url:
-    allowed_origins.append(frontend_url.rstrip("/"))
+allowed_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://clinic-care-tau.vercel.app",
+]
+configured_origins = os.getenv("CLINICCARE_FRONTEND_URL", "")
+allowed_origins.extend(
+    origin.strip().strip('\"\'').rstrip("/")
+    for origin in configured_origins.replace("\n", ",").split(",")
+    if origin.strip().strip('\"\'')
+)
 
 app.add_middleware(
     CORSMiddleware,
