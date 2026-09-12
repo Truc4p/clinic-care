@@ -19,6 +19,12 @@ def seed_diagnoses(db: Session) -> int:
         return 0
 
     sql = SEED_PATH.read_text(encoding="utf-8")
+    if db.bind.dialect.name == "postgresql":
+        sql = sql.replace(
+            "INSERT OR IGNORE INTO diagnoses",
+            "INSERT INTO diagnoses",
+            1,
+        ).rstrip().removesuffix(";") + " ON CONFLICT (code) DO NOTHING;"
     db.execute(text(sql))
     db.commit()
     return db.query(Diagnosis).count()
